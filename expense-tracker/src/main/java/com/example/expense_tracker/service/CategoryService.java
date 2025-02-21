@@ -61,13 +61,14 @@ public class CategoryService {
      * @response 404 Not found
      */
     @Operation(summary = "Update an existing category by ID")
-    public Category updateCategory(Long id, Category updatedCategory) {
-        if (categoryRepository.existsById(id)) {
-            updatedCategory.setId(id);
-            return categoryRepository.save(updatedCategory);
-        }
-        return null;
+    public Optional<Category> updateCategory(Long id, Category updatedCategory) {
+        return categoryRepository.findById(id)
+                .map(existingCategory -> {
+                    updatedCategory.setId(id);
+                    return categoryRepository.save(updatedCategory);
+                });
     }
+    
 
     /**
      * @swagger Delete a category by ID
@@ -77,7 +78,12 @@ public class CategoryService {
      * @response 204 No content
      */
     @Operation(summary = "Delete a category by ID")
-    public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+    public Optional<Object> deleteCategory(Long id) {
+        return categoryRepository.findById(id)
+                .map(category -> {
+                    categoryRepository.delete(category);
+                    return new Object(); // Representa éxito sin contenido
+                });
     }
+    
 }

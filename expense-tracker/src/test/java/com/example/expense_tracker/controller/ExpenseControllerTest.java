@@ -2,6 +2,7 @@ package com.example.expense_tracker.controller;
 
 import com.example.expense_tracker.model.Expense;
 import com.example.expense_tracker.service.ExpenseService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,23 +29,35 @@ public class ExpenseControllerTest {
     @InjectMocks
     private ExpenseController expenseController;
 
-    public ExpenseControllerTest() {
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    public void testGetAllExpenses() {
+    public void testGetAllExpenses_WhenExpensesExist_ShouldReturnOk() {
         List<Expense> expenses = Arrays.asList(new Expense(), new Expense());
         when(expenseService.getAllExpenses()).thenReturn(expenses);
 
-        List<Expense> result = expenseController.getAllExpenses();
+        ResponseEntity<List<Expense>> response = expenseController.getAllExpenses();
 
-        assertEquals(2, result.size());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(2, response.getBody().size());
         verify(expenseService, times(1)).getAllExpenses();
     }
 
     @Test
-    public void testGetExpenseById() {
+    public void testGetAllExpenses_WhenNoExpensesExist_ShouldReturnNoContent() {
+        when(expenseService.getAllExpenses()).thenReturn(List.of());
+
+        ResponseEntity<List<Expense>> response = expenseController.getAllExpenses();
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(expenseService, times(1)).getAllExpenses();
+    }
+
+    @Test
+    public void testGetExpenseById_WhenExpenseExists_ShouldReturnOk() {
         Expense expense = new Expense();
         when(expenseService.getExpenseById(1L)).thenReturn(Optional.of(expense));
 
@@ -55,20 +68,41 @@ public class ExpenseControllerTest {
     }
 
     @Test
-    public void testCreateExpense() {
+    public void testGetExpenseById_WhenExpenseDoesNotExist_ShouldReturnNotFound() {
+        when(expenseService.getExpenseById(1L)).thenReturn(Optional.empty());
+
+        ResponseEntity<Expense> response = expenseController.getExpenseById(1L);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(expenseService, times(1)).getExpenseById(1L);
+    }
+
+    @Test
+    public void testCreateExpense_WhenValidExpense_ShouldReturnOk() {
         Expense expense = new Expense();
         when(expenseService.createExpense(expense)).thenReturn(expense);
 
-        Expense result = expenseController.createExpense(expense);
+        ResponseEntity<Expense> response = expenseController.createExpense(expense);
 
-        assertEquals(expense, result);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expense, response.getBody());
         verify(expenseService, times(1)).createExpense(expense);
     }
 
     @Test
-    public void testUpdateExpense() {
+    public void testCreateExpense_WhenExpenseIsNull_ShouldReturnBadRequest() {
+        when(expenseService.createExpense(null)).thenReturn(null);
+
+        ResponseEntity<Expense> response = expenseController.createExpense(null);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(expenseService, times(1)).createExpense(null);
+    }
+
+    @Test
+    public void testUpdateExpense_WhenExpenseExists_ShouldReturnOk() {
         Expense expense = new Expense();
-        when(expenseService.updateExpense(1L, expense)).thenReturn(expense);
+        when(expenseService.updateExpense(1L, expense)).thenReturn(Optional.of(expense));
 
         ResponseEntity<Expense> response = expenseController.updateExpense(1L, expense);
 
@@ -77,12 +111,33 @@ public class ExpenseControllerTest {
     }
 
     @Test
-    public void testDeleteExpense() {
-        doNothing().when(expenseService).deleteExpense(1L);
+    public void testUpdateExpense_WhenExpenseDoesNotExist_ShouldReturnNotFound() {
+        Expense expense = new Expense();
+        when(expenseService.updateExpense(1L, expense)).thenReturn(Optional.empty());
 
-        ResponseEntity<Void> response = expenseController.deleteExpense(1L);
+        ResponseEntity<Expense> response = expenseController.updateExpense(1L, expense);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(expenseService, times(1)).updateExpense(1L, expense);
+    }
+
+    @Test
+    public void testDeleteExpense_WhenExpenseExists_ShouldReturnNoContent() {
+        when(expenseService.deleteExpense(1L)).thenReturn(Optional.empty());
+
+        ResponseEntity<Object> response = expenseController.deleteExpense(1L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(expenseService, times(1)).deleteExpense(1L);
+    }
+
+    @Test
+    public void testDeleteExpense_WhenExpenseDoesNotExist_ShouldReturnNotFound() {
+        when(expenseService.deleteExpense(1L)).thenReturn(Optional.ofNullable(null));
+
+        ResponseEntity<Object> response = expenseController.deleteExpense(1L);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         verify(expenseService, times(1)).deleteExpense(1L);
     }
 }

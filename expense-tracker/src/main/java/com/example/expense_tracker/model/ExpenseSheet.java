@@ -16,8 +16,8 @@ public class ExpenseSheet {
     @Schema(description = "Unique identifier of the expense sheet", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
-    @Schema(description = "Title or name of the expense sheet", example = "Paris Trip Expenses")
-    private String title;
+    @Schema(description = "Name or title of the expense sheet", example = "Paris Trip Expenses")
+    private String name;
 
     @Schema(description = "General description of the expense sheet", example = "All expenses related to the Paris trip")
     private String description;

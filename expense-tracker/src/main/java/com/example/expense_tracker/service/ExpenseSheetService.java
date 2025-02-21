@@ -56,12 +56,12 @@ public class ExpenseSheetService {
      * @response 200 Updated ExpenseSheet object
      * @response 404 Not found
      */
-    public ExpenseSheet updateExpenseSheet(Long id, ExpenseSheet updatedExpenseSheet) {
-        if (expenseSheetRepository.existsById(id)) {
-            updatedExpenseSheet.setId(id);
-            return expenseSheetRepository.save(updatedExpenseSheet);
-        }
-        return null;
+    public Optional<ExpenseSheet> updateExpenseSheet(Long id, ExpenseSheet updatedExpenseSheet) {
+        return expenseSheetRepository.findById(id)
+                .map(existingExpenseSheet -> {
+                    updatedExpenseSheet.setId(id);
+                    return expenseSheetRepository.save(updatedExpenseSheet);
+                });
     }
 
     /**
@@ -71,7 +71,11 @@ public class ExpenseSheetService {
      * @parameter id path required - ExpenseSheet ID
      * @response 204 No content
      */
-    public void deleteExpenseSheet(Long id) {
-        expenseSheetRepository.deleteById(id);
+    public Optional<Object> deleteExpenseSheet(Long id) {
+        return expenseSheetRepository.findById(id)
+                .map(expenseSheet -> {
+                    expenseSheetRepository.delete(expenseSheet);
+                    return new Object(); // Representa éxito sin contenido
+                });
     }
 }

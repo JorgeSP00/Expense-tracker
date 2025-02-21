@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/goals")
@@ -22,8 +23,11 @@ public class GoalController {
      * @response 200 List of goals
      */
     @GetMapping
-    public List<Goal> getAllGoals() {
-        return goalService.getAllGoals();
+    public ResponseEntity<List<Goal>> getAllGoals() {
+        return Optional.ofNullable(goalService.getAllGoals())
+                .filter(goals -> !goals.isEmpty())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     /**
@@ -49,8 +53,10 @@ public class GoalController {
      * @response 201 Created goal object
      */
     @PostMapping
-    public Goal createGoal(@RequestBody Goal goal) {
-        return goalService.createGoal(goal);
+    public ResponseEntity<Goal> createGoal(@RequestBody Goal goal) {
+        return Optional.ofNullable(goalService.createGoal(goal))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     /**
@@ -64,8 +70,9 @@ public class GoalController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<Goal> updateGoal(@PathVariable Long id, @RequestBody Goal goal) {
-        Goal updatedGoal = goalService.updateGoal(id, goal);
-        return updatedGoal != null ? ResponseEntity.ok(updatedGoal) : ResponseEntity.notFound().build();
+        return goalService.updateGoal(id, goal)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -76,8 +83,9 @@ public class GoalController {
      * @response 204 No content
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteGoal(@PathVariable Long id) {
-        goalService.deleteGoal(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Object> deleteGoal(@PathVariable Long id) {
+        return goalService.deleteGoal(id)
+                .map(deleted -> ResponseEntity.noContent().build())
+                .orElse(ResponseEntity.notFound().build());
     }
 }

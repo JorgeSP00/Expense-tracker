@@ -29,4 +29,9 @@ public class Expense {
     @JoinColumn(name = "sheet_id")
     @Schema(description = "Expense sheet to which this expense belongs")
     private ExpenseSheet expenseSheet;
+    
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    @Schema(description = "Category to which this expense belongs")
+    private Category category;
 }

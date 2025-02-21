@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -42,13 +42,34 @@ public class ExpenseServiceTest {
     }
 
     @Test
+    public void testGetAllExpenses_EmptyList() {
+        when(expenseRepository.findAll()).thenReturn(List.of());
+
+        List<Expense> result = expenseService.getAllExpenses();
+
+        assertTrue(result.isEmpty());
+        verify(expenseRepository, times(1)).findAll();
+    }
+
+    @Test
     public void testGetExpenseById() {
         Expense expense = new Expense();
         when(expenseRepository.findById(1L)).thenReturn(Optional.of(expense));
 
         Optional<Expense> result = expenseService.getExpenseById(1L);
 
-        assertEquals(Optional.of(expense), result);
+        assertTrue(result.isPresent());
+        assertEquals(expense, result.get());
+        verify(expenseRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void testGetExpenseById_NotFound() {
+        when(expenseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Expense> result = expenseService.getExpenseById(1L);
+
+        assertFalse(result.isPresent());
         verify(expenseRepository, times(1)).findById(1L);
     }
 
@@ -59,28 +80,103 @@ public class ExpenseServiceTest {
 
         Expense result = expenseService.createExpense(expense);
 
+        assertNotNull(result);
         assertEquals(expense, result);
         verify(expenseRepository, times(1)).save(expense);
     }
 
     @Test
     public void testUpdateExpense() {
-        Expense expense = new Expense();
-        when(expenseRepository.existsById(1L)).thenReturn(true);
-        when(expenseRepository.save(expense)).thenReturn(expense);
+        Expense existingExpense = new Expense();
+        Expense updatedExpense = new Expense();
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(existingExpense));
+        when(expenseRepository.save(updatedExpense)).thenReturn(updatedExpense);
 
-        Expense result = expenseService.updateExpense(1L, expense);
+        Optional<Expense> result = expenseService.updateExpense(1L, updatedExpense);
 
-        assertEquals(expense, result);
-        verify(expenseRepository, times(1)).save(expense);
+        assertTrue(result.isPresent());
+        assertEquals(updatedExpense, result.get());
+        verify(expenseRepository, times(1)).save(updatedExpense);
+    }
+
+    @Test
+    public void testUpdateExpense_NotFound() {
+        Expense updatedExpense = new Expense();
+        when(expenseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Expense> result = expenseService.updateExpense(1L, updatedExpense);
+
+        assertFalse(result.isPresent());
+        verify(expenseRepository, times(0)).save(any());
     }
 
     @Test
     public void testDeleteExpense() {
-        doNothing().when(expenseRepository).deleteById(1L);
+        Expense expense = new Expense();
+        when(expenseRepository.findById(1L)).thenReturn(Optional.of(expense));
+        doNothing().when(expenseRepository).delete(expense);
 
-        expenseService.deleteExpense(1L);
+        Optional<Object> result = expenseService.deleteExpense(1L);
 
-        verify(expenseRepository, times(1)).deleteById(1L);
+        assertTrue(result.isPresent());
+        verify(expenseRepository, times(1)).delete(expense);
+    }
+
+    @Test
+    public void testDeleteExpense_NotFound() {
+        when(expenseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Object> result = expenseService.deleteExpense(1L);
+
+        assertFalse(result.isPresent());
+        verify(expenseRepository, times(0)).delete(any());
+    }
+
+    @Test
+    public void testGetExpensesByCategory() {
+        Long categoryId = 1L;
+        List<Expense> expenses = Arrays.asList(new Expense(), new Expense());
+
+        when(expenseRepository.findByCategoryId(categoryId)).thenReturn(expenses);
+
+        List<Expense> result = expenseService.getExpensesByCategory(categoryId);
+
+        assertEquals(2, result.size());
+        verify(expenseRepository, times(1)).findByCategoryId(categoryId);
+    }
+
+    @Test
+    public void testGetExpensesByCategory_EmptyList() {
+        Long categoryId = 1L;
+        when(expenseRepository.findByCategoryId(categoryId)).thenReturn(List.of());
+
+        List<Expense> result = expenseService.getExpensesByCategory(categoryId);
+
+        assertTrue(result.isEmpty());
+        verify(expenseRepository, times(1)).findByCategoryId(categoryId);
+    }
+
+    @Test
+    public void testGetExpensesByExpenseSheet() {
+        Long expenseSheetId = 1L;
+        List<Expense> expenses = Arrays.asList(new Expense(), new Expense());
+
+        when(expenseRepository.findByExpenseSheetId(expenseSheetId)).thenReturn(expenses);
+
+        List<Expense> result = expenseService.getExpensesByExpenseSheet(expenseSheetId);
+
+        assertEquals(2, result.size());
+        verify(expenseRepository, times(1)).findByExpenseSheetId(expenseSheetId);
+    }
+
+    @Test
+    public void testGetExpensesByExpenseSheet_EmptyList() {
+        Long expenseSheetId = 1L;
+        when(expenseRepository.findByExpenseSheetId(expenseSheetId)).thenReturn(List.of());
+
+        List<Expense> result = expenseService.getExpensesByExpenseSheet(expenseSheetId);
+
+        assertTrue(result.isEmpty());
+        verify(expenseRepository, times(1)).findByExpenseSheetId(expenseSheetId);
     }
 }

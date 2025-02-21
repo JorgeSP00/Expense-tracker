@@ -37,9 +37,20 @@ public class ExpenseSheetControllerTest {
         List<ExpenseSheet> sheets = Arrays.asList(new ExpenseSheet(), new ExpenseSheet());
         when(expenseSheetService.getAllExpenseSheets()).thenReturn(sheets);
 
-        List<ExpenseSheet> result = expenseSheetController.getAllExpenseSheets();
+        ResponseEntity<List<ExpenseSheet>> response = expenseSheetController.getAllExpenseSheets();
 
-        assertEquals(2, result.size());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(2, response.getBody().size());
+        verify(expenseSheetService, times(1)).getAllExpenseSheets();
+    }
+
+    @Test
+    public void testGetAllExpenseSheets_NoContent() {
+        when(expenseSheetService.getAllExpenseSheets()).thenReturn(List.of());
+
+        ResponseEntity<List<ExpenseSheet>> response = expenseSheetController.getAllExpenseSheets();
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(expenseSheetService, times(1)).getAllExpenseSheets();
     }
 
@@ -72,12 +83,22 @@ public class ExpenseSheetControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(sheet, response.getBody());
+        verify(expenseSheetService, times(1)).createExpenseSheet(sheet);
+    }
+
+    @Test
+    public void testCreateExpenseSheet_BadRequest() {
+        when(expenseSheetService.createExpenseSheet(any())).thenReturn(null);
+
+        ResponseEntity<ExpenseSheet> response = expenseSheetController.createExpenseSheet(new ExpenseSheet());
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
     public void testUpdateExpenseSheet() {
         ExpenseSheet sheet = new ExpenseSheet();
-        when(expenseSheetService.updateExpenseSheet(1L, sheet)).thenReturn(sheet);
+        when(expenseSheetService.updateExpenseSheet(1L, sheet)).thenReturn(Optional.of(sheet));
 
         ResponseEntity<ExpenseSheet> response = expenseSheetController.updateExpenseSheet(1L, sheet);
 
@@ -88,7 +109,7 @@ public class ExpenseSheetControllerTest {
     @Test
     public void testUpdateExpenseSheet_NotFound() {
         ExpenseSheet sheet = new ExpenseSheet();
-        when(expenseSheetService.updateExpenseSheet(1L, sheet)).thenReturn(null);
+        when(expenseSheetService.updateExpenseSheet(1L, sheet)).thenReturn(Optional.empty());
 
         ResponseEntity<ExpenseSheet> response = expenseSheetController.updateExpenseSheet(1L, sheet);
 
@@ -97,11 +118,20 @@ public class ExpenseSheetControllerTest {
 
     @Test
     public void testDeleteExpenseSheet() {
-        doNothing().when(expenseSheetService).deleteExpenseSheet(1L);
+        when(expenseSheetService.deleteExpenseSheet(1L)).thenReturn(Optional.of(new Object()));
 
-        ResponseEntity<Void> response = expenseSheetController.deleteExpenseSheet(1L);
+        ResponseEntity<Object> response = expenseSheetController.deleteExpenseSheet(1L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(expenseSheetService, times(1)).deleteExpenseSheet(1L);
+    }
+
+    @Test
+    public void testDeleteExpenseSheet_NotFound() {
+        when(expenseSheetService.deleteExpenseSheet(1L)).thenReturn(Optional.empty());
+
+        ResponseEntity<Object> response = expenseSheetController.deleteExpenseSheet(1L);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 }

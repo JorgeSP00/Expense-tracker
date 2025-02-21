@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -26,8 +27,11 @@ public class ExpenseController {
      */
     @Operation(summary = "Get all expenses")
     @GetMapping
-    public List<Expense> getAllExpenses() {
-        return expenseService.getAllExpenses();
+    public ResponseEntity<List<Expense>> getAllExpenses() {
+        return Optional.ofNullable(expenseService.getAllExpenses())
+                .filter(expenses -> !expenses.isEmpty())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     /**
@@ -55,8 +59,10 @@ public class ExpenseController {
      */
     @Operation(summary = "Create a new expense")
     @PostMapping
-    public Expense createExpense(@RequestBody Expense expense) {
-        return expenseService.createExpense(expense);
+    public ResponseEntity<Expense> createExpense(@RequestBody Expense expense) {
+        return Optional.ofNullable(expenseService.createExpense(expense))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     /**
@@ -71,8 +77,9 @@ public class ExpenseController {
     @Operation(summary = "Update an existing expense by ID")
     @PutMapping("/{id}")
     public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody Expense expense) {
-        Expense updatedExpense = expenseService.updateExpense(id, expense);
-        return updatedExpense != null ? ResponseEntity.ok(updatedExpense) : ResponseEntity.notFound().build();
+        return expenseService.updateExpense(id, expense)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -84,8 +91,27 @@ public class ExpenseController {
      */
     @Operation(summary = "Delete an expense by ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
-        expenseService.deleteExpense(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Object> deleteExpense(@PathVariable Long id) {
+        return expenseService.deleteExpense(id)
+                .map(deleted -> ResponseEntity.noContent().build())
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Get all expenses by category ID")
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<Expense>> getExpensesByCategory(@PathVariable Long categoryId) {
+        return Optional.ofNullable(expenseService.getExpensesByCategory(categoryId))
+                .filter(expenses -> !expenses.isEmpty())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
+    @Operation(summary = "Get all expenses by expense sheet ID")
+    @GetMapping("/sheet/{expenseSheetId}")
+    public ResponseEntity<List<Expense>> getExpensesByExpenseSheet(@PathVariable Long expenseSheetId) {
+        return Optional.ofNullable(expenseService.getExpensesByExpenseSheet(expenseSheetId))
+                .filter(expenses -> !expenses.isEmpty())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 }

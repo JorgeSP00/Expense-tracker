@@ -56,12 +56,12 @@ public class GoalService {
      * @response 200 Updated Goal object
      * @response 404 Not found
      */
-    public Goal updateGoal(Long id, Goal updatedGoal) {
-        if (goalRepository.existsById(id)) {
-            updatedGoal.setId(id);
-            return goalRepository.save(updatedGoal);
-        }
-        return null;
+    public Optional<Goal> updateGoal(Long id, Goal updatedGoal) {
+        return goalRepository.findById(id)
+                .map(existingGoal -> {
+                    updatedGoal.setId(id);
+                    return goalRepository.save(updatedGoal);
+                });
     }
 
     /**
@@ -71,7 +71,11 @@ public class GoalService {
      * @parameter id path required - Goal ID
      * @response 204 No content
      */
-    public void deleteGoal(Long id) {
-        goalRepository.deleteById(id);
+    public Optional<Object> deleteGoal(Long id) {
+        return goalRepository.findById(id)
+                .map(goal -> {
+                    goalRepository.delete(goal);
+                    return new Object(); // Representa éxito sin contenido
+                });
     }
 }

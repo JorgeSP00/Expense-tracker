@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -42,13 +42,34 @@ public class GoalServiceTest {
     }
 
     @Test
+    public void testGetAllGoals_EmptyList() {
+        when(goalRepository.findAll()).thenReturn(List.of());
+
+        List<Goal> result = goalService.getAllGoals();
+
+        assertTrue(result.isEmpty());
+        verify(goalRepository, times(1)).findAll();
+    }
+
+    @Test
     public void testGetGoalById() {
         Goal goal = new Goal();
         when(goalRepository.findById(1L)).thenReturn(Optional.of(goal));
 
         Optional<Goal> result = goalService.getGoalById(1L);
 
-        assertEquals(Optional.of(goal), result);
+        assertTrue(result.isPresent());
+        assertEquals(goal, result.get());
+        verify(goalRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void testGetGoalById_NotFound() {
+        when(goalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Goal> result = goalService.getGoalById(1L);
+
+        assertFalse(result.isPresent());
         verify(goalRepository, times(1)).findById(1L);
     }
 
@@ -59,28 +80,55 @@ public class GoalServiceTest {
 
         Goal result = goalService.createGoal(goal);
 
+        assertNotNull(result);
         assertEquals(goal, result);
         verify(goalRepository, times(1)).save(goal);
     }
 
     @Test
     public void testUpdateGoal() {
-        Goal goal = new Goal();
-        when(goalRepository.existsById(1L)).thenReturn(true);
-        when(goalRepository.save(goal)).thenReturn(goal);
+        Goal existingGoal = new Goal();
+        Goal updatedGoal = new Goal();
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(existingGoal));
+        when(goalRepository.save(updatedGoal)).thenReturn(updatedGoal);
 
-        Goal result = goalService.updateGoal(1L, goal);
+        Optional<Goal> result = goalService.updateGoal(1L, updatedGoal);
 
-        assertEquals(goal, result);
-        verify(goalRepository, times(1)).save(goal);
+        assertTrue(result.isPresent());
+        assertEquals(updatedGoal, result.get());
+        verify(goalRepository, times(1)).save(updatedGoal);
+    }
+
+    @Test
+    public void testUpdateGoal_NotFound() {
+        Goal updatedGoal = new Goal();
+        when(goalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Goal> result = goalService.updateGoal(1L, updatedGoal);
+
+        assertFalse(result.isPresent());
+        verify(goalRepository, times(0)).save(any());
     }
 
     @Test
     public void testDeleteGoal() {
-        doNothing().when(goalRepository).deleteById(1L);
+        Goal goal = new Goal();
+        when(goalRepository.findById(1L)).thenReturn(Optional.of(goal));
+        doNothing().when(goalRepository).delete(goal);
 
-        goalService.deleteGoal(1L);
+        Optional<Object> result = goalService.deleteGoal(1L);
 
-        verify(goalRepository, times(1)).deleteById(1L);
+        assertTrue(result.isPresent());
+        verify(goalRepository, times(1)).delete(goal);
+    }
+
+    @Test
+    public void testDeleteGoal_NotFound() {
+        when(goalRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Object> result = goalService.deleteGoal(1L);
+
+        assertFalse(result.isPresent());
+        verify(goalRepository, times(0)).delete(any());
     }
 }

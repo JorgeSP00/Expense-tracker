@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -42,13 +42,34 @@ public class CategoryServiceTest {
     }
 
     @Test
+    public void testGetAllCategories_EmptyList() {
+        when(categoryRepository.findAll()).thenReturn(List.of());
+
+        List<Category> result = categoryService.getAllCategories();
+
+        assertTrue(result.isEmpty());
+        verify(categoryRepository, times(1)).findAll();
+    }
+
+    @Test
     public void testGetCategoryById() {
         Category category = new Category();
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
 
         Optional<Category> result = categoryService.getCategoryById(1L);
 
-        assertEquals(Optional.of(category), result);
+        assertTrue(result.isPresent());
+        assertEquals(category, result.get());
+        verify(categoryRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void testGetCategoryById_NotFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Category> result = categoryService.getCategoryById(1L);
+
+        assertFalse(result.isPresent());
         verify(categoryRepository, times(1)).findById(1L);
     }
 
@@ -59,28 +80,55 @@ public class CategoryServiceTest {
 
         Category result = categoryService.createCategory(category);
 
+        assertNotNull(result);
         assertEquals(category, result);
         verify(categoryRepository, times(1)).save(category);
     }
 
     @Test
     public void testUpdateCategory() {
-        Category category = new Category();
-        when(categoryRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.save(category)).thenReturn(category);
+        Category existingCategory = new Category();
+        Category updatedCategory = new Category();
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(existingCategory));
+        when(categoryRepository.save(updatedCategory)).thenReturn(updatedCategory);
 
-        Category result = categoryService.updateCategory(1L, category);
+        Optional<Category> result = categoryService.updateCategory(1L, updatedCategory);
 
-        assertEquals(category, result);
-        verify(categoryRepository, times(1)).save(category);
+        assertTrue(result.isPresent());
+        assertEquals(updatedCategory, result.get());
+        verify(categoryRepository, times(1)).save(updatedCategory);
+    }
+
+    @Test
+    public void testUpdateCategory_NotFound() {
+        Category updatedCategory = new Category();
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Category> result = categoryService.updateCategory(1L, updatedCategory);
+
+        assertFalse(result.isPresent());
+        verify(categoryRepository, times(0)).save(any());
     }
 
     @Test
     public void testDeleteCategory() {
-        doNothing().when(categoryRepository).deleteById(1L);
+        Category category = new Category();
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        doNothing().when(categoryRepository).delete(category);
 
-        categoryService.deleteCategory(1L);
+        Optional<Object> result = categoryService.deleteCategory(1L);
 
-        verify(categoryRepository, times(1)).deleteById(1L);
+        assertTrue(result.isPresent());
+        verify(categoryRepository, times(1)).delete(category);
+    }
+
+    @Test
+    public void testDeleteCategory_NotFound() {
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Object> result = categoryService.deleteCategory(1L);
+
+        assertFalse(result.isPresent());
+        verify(categoryRepository, times(0)).delete(any());
     }
 }

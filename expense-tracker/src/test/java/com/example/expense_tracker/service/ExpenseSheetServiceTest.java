@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -42,13 +42,34 @@ public class ExpenseSheetServiceTest {
     }
 
     @Test
+    public void testGetAllExpenseSheets_EmptyList() {
+        when(expenseSheetRepository.findAll()).thenReturn(List.of());
+
+        List<ExpenseSheet> result = expenseSheetService.getAllExpenseSheets();
+
+        assertTrue(result.isEmpty());
+        verify(expenseSheetRepository, times(1)).findAll();
+    }
+
+    @Test
     public void testGetExpenseSheetById() {
         ExpenseSheet sheet = new ExpenseSheet();
         when(expenseSheetRepository.findById(1L)).thenReturn(Optional.of(sheet));
 
         Optional<ExpenseSheet> result = expenseSheetService.getExpenseSheetById(1L);
 
-        assertEquals(Optional.of(sheet), result);
+        assertTrue(result.isPresent());
+        assertEquals(sheet, result.get());
+        verify(expenseSheetRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    public void testGetExpenseSheetById_NotFound() {
+        when(expenseSheetRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<ExpenseSheet> result = expenseSheetService.getExpenseSheetById(1L);
+
+        assertFalse(result.isPresent());
         verify(expenseSheetRepository, times(1)).findById(1L);
     }
 
@@ -59,28 +80,55 @@ public class ExpenseSheetServiceTest {
 
         ExpenseSheet result = expenseSheetService.createExpenseSheet(sheet);
 
+        assertNotNull(result);
         assertEquals(sheet, result);
         verify(expenseSheetRepository, times(1)).save(sheet);
     }
 
     @Test
     public void testUpdateExpenseSheet() {
-        ExpenseSheet sheet = new ExpenseSheet();
-        when(expenseSheetRepository.existsById(1L)).thenReturn(true);
-        when(expenseSheetRepository.save(sheet)).thenReturn(sheet);
+        ExpenseSheet existingSheet = new ExpenseSheet();
+        ExpenseSheet updatedSheet = new ExpenseSheet();
+        when(expenseSheetRepository.findById(1L)).thenReturn(Optional.of(existingSheet));
+        when(expenseSheetRepository.save(updatedSheet)).thenReturn(updatedSheet);
 
-        ExpenseSheet result = expenseSheetService.updateExpenseSheet(1L, sheet);
+        Optional<ExpenseSheet> result = expenseSheetService.updateExpenseSheet(1L, updatedSheet);
 
-        assertEquals(sheet, result);
-        verify(expenseSheetRepository, times(1)).save(sheet);
+        assertTrue(result.isPresent());
+        assertEquals(updatedSheet, result.get());
+        verify(expenseSheetRepository, times(1)).save(updatedSheet);
+    }
+
+    @Test
+    public void testUpdateExpenseSheet_NotFound() {
+        ExpenseSheet updatedSheet = new ExpenseSheet();
+        when(expenseSheetRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<ExpenseSheet> result = expenseSheetService.updateExpenseSheet(1L, updatedSheet);
+
+        assertFalse(result.isPresent());
+        verify(expenseSheetRepository, times(0)).save(any());
     }
 
     @Test
     public void testDeleteExpenseSheet() {
-        doNothing().when(expenseSheetRepository).deleteById(1L);
+        ExpenseSheet sheet = new ExpenseSheet();
+        when(expenseSheetRepository.findById(1L)).thenReturn(Optional.of(sheet));
+        doNothing().when(expenseSheetRepository).delete(sheet);
 
-        expenseSheetService.deleteExpenseSheet(1L);
+        Optional<Object> result = expenseSheetService.deleteExpenseSheet(1L);
 
-        verify(expenseSheetRepository, times(1)).deleteById(1L);
+        assertTrue(result.isPresent());
+        verify(expenseSheetRepository, times(1)).delete(sheet);
+    }
+
+    @Test
+    public void testDeleteExpenseSheet_NotFound() {
+        when(expenseSheetRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Object> result = expenseSheetService.deleteExpenseSheet(1L);
+
+        assertFalse(result.isPresent());
+        verify(expenseSheetRepository, times(0)).delete(any());
     }
 }

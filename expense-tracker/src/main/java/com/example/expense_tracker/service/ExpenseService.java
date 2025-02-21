@@ -61,12 +61,12 @@ public class ExpenseService {
      * @response 404 Not found
      */
     @Operation(summary = "Update an existing expense by ID")
-    public Expense updateExpense(Long id, Expense updatedExpense) {
-        if (expenseRepository.existsById(id)) {
-            updatedExpense.setId(id);
-            return expenseRepository.save(updatedExpense);
-        }
-        return null;
+    public Optional<Expense> updateExpense(Long id, Expense updatedExpense) {
+        return expenseRepository.findById(id)
+                .map(existingExpense -> {
+                    updatedExpense.setId(id);
+                    return expenseRepository.save(updatedExpense);
+                });
     }
 
     /**
@@ -76,8 +76,36 @@ public class ExpenseService {
      * @parameter id path required - Expense ID
      * @response 204 No content
      */
-    @Operation(summary = "Delete an expense by ID")
-    public void deleteExpense(Long id) {
-        expenseRepository.deleteById(id);
+    public Optional<Object> deleteExpense(Long id) {
+        return expenseRepository.findById(id)
+                .map(expense -> {
+                    expenseRepository.delete(expense);
+                    return new Object(); // Representa éxito sin contenido
+                });
+    }
+
+
+    /**
+     * @swagger Retrieve expensea by its Category ID
+     * @operationId getExpensesByCategory
+     * @tags Expense
+     * @parameter id path required - Category ID
+     * @response 200 Expense object
+     * @response 404 Not found
+     */
+    public List<Expense> getExpensesByCategory(Long categoryId) {
+        return expenseRepository.findByCategoryId(categoryId);
+    }
+
+    /**
+     * @swagger Retrieve expensea by its Expense sheet ID
+     * @operationId getExpensesByExpenseSheet
+     * @tags Expense
+     * @parameter id path required - Expense sheet ID
+     * @response 200 Expense object
+     * @response 404 Not found
+     */
+    public List<Expense> getExpensesByExpenseSheet(Long expenseSheetId) {
+        return expenseRepository.findByExpenseSheetId(expenseSheetId);
     }
 }
